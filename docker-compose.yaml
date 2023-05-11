@@ -1,0 +1,46 @@
+services:
+  api:
+    build:
+      context: .
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      host: 0.0.0.0
+      port: 8000
+      db_host: db
+    volumes:
+      - ${PATH_REPORT_SAVE}:${PATH_REPORT_SAVE}
+    ports:
+      - ${port}:8000
+
+  db:
+    image: postgres:13.8-bullseye
+    privileged: true
+    env_file:
+      - .env
+    environment:
+      POSTGRES_PASSWORD: ${db_pass}
+      POSTGRES_USER: ${db_user}
+      POSTGRES_DB: ${db_base}
+    volumes:
+      - victory-db-data:/var/lib/postgresql/data
+    restart: always
+    ports:
+      - 5555:5432
+    healthcheck:
+      test: pg_isready -U victory
+      interval: 2s
+      timeout: 3s
+      retries: 40
+
+volumes:
+  victory-db-data:
+    name: victory-db-data
+
+networks:
+  default:
+    driver: bridge
